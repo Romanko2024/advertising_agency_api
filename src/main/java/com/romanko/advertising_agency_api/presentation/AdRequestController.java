@@ -1,9 +1,11 @@
 package com.romanko.advertising_agency_api.presentation;
 
 import com.romanko.advertising_agency_api.application.AdRequestService;
-import com.romanko.advertising_agency_api.models.AdRequest;
+import com.romanko.advertising_agency_api.dto.AdRequestDTO;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -16,13 +18,24 @@ public class AdRequestController {
         this.service = service;
     }
 
-    @PostMapping
-    public AdRequest createRequest(@Valid @RequestBody AdRequest request) {
-        return service.saveRequest(request);
+    @GetMapping
+    public List<AdRequestDTO> getAll() {
+        return service.getAllRequests();
     }
 
-    @GetMapping
-    public List<AdRequest> getAll() {
-        return service.getAllRequests();
+    @PostMapping
+    public ResponseEntity<AdRequestDTO> create(@Valid @RequestBody AdRequestDTO dto) {
+        return ResponseEntity.ok(service.createRequest(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<AdRequestDTO> update(@PathVariable Long id, @Valid @RequestBody AdRequestDTO dto) {
+        return ResponseEntity.ok(service.updateRequest(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        service.deleteRequest(id);
+        return ResponseEntity.noContent().build();
     }
 }
