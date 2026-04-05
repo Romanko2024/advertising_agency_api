@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Рекламна Агенція - Адмін-панель</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; background: #f0f2f5; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
+        .section { margin-bottom: 30px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
+        form { display: grid; gap: 10px; }
+        input, textarea { padding: 12px; border: 1px solid #ddd; border-radius: 6px; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-save { background: #28a745; color: white; }
+        .btn-search { background: #1a73e8; color: white; }
+        .btn-delete { background: #dc3545; color: white; padding: 5px 10px; }
+        .btn-edit { background: #ffc107; color: black; padding: 5px 10px; margin-right: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: #f8f9fa; color: #555; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Рекламна Агенція</h1>
+
+    <div class="section">
+        <h2>Пошук за ID</h2>
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="searchId" placeholder="Введіть ID заявки...">
+            <button class="btn-search" onclick="searchById()">Знайти</button>
+            <button onclick="loadRequests()">Скинути</button>
+        </div>
+        <div id="searchResult" style="margin-top: 10px; font-weight: bold; color: #1a73e8;"></div>
+    </div>
+
+    <div class="section">
+        <h2 id="formTitle">Створити / Редагувати заявку</h2>
+        <form id="adForm">
+            <input type="hidden" id="requestId">
+            <input type="text" id="clientName" placeholder="Назва клієнта" required>
+            <input type="number" id="budget" placeholder="Бюджет (грн)" required>
+            <textarea id="description" placeholder="Опис кампанії"></textarea>
+            <button type="submit" class="btn-save">Зберегти дані</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h2>Всі заявки</h2>
+        <table id="requestsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Клієнт</th>
+                    <th>Бюджет</th>
+                    <th>Дії</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const API_URL = '/api/requests';
+
+    async function loadRequests() {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        renderTable(data);
+        document.getElementById('searchResult').innerText = '';
+    }
+
+    function renderTable(data) {
+        const tbody = document.querySelector('#requestsTable tbody');
+        tbody.innerHTML = '';
+        const items = Array.isArray(data) ? data : [data];
+        items.forEach(req => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${req.id}</td>
+                    <td>${req.clientName}</td>
+                    <td>${req.budget} грн</td>
+                    <td>
+                        <button class="btn-edit" onclick="editMode(${req.id}, '${req.clientName}', ${req.budget}, '${req.description}')">Редагувати</button>
+                        <button class="btn-delete" onclick="deleteRequest(${req.id})">Видалити</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    // пошук
+    async function searchById() {
+        const id = document.getElementById('searchId').value;
+        const res = await fetch(`${API_URL}/${id}`);
+        if (res.ok) {
+            const data = await res.json();
+            renderTable([data]);
+            document.getElementById('searchResult').innerText = "Знайдено!";
+        } else {
+            alert("Заявку не знайдено!");
+        }
+    }
+
+    // редагування
+    function editMode(id, name, budget, desc) {
+        document.getElementById('requestId').value = id;
+        document.getElementById('clientName').value = name;
+        document.getElementById('budget').value = budget;
+        document.getElementById('description').value = desc;
+        document.getElementById('formTitle').innerText = "Редагування заявки #" + id;
+    }
+
+    // створення || оновлення
+    document.getElementById('adForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('requestId').value;
+        const body = {
+            clientName: document.getElementById('clientName').value,
+            budget: document.getElementById('budget').value,
+            description: document.getElementById('description').value
+        };
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_URL}/${id}` : API_URL;
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            document.getElementById('adForm').reset();
+            document.getElementById('requestId').value = '';
+            document.getElementById('formTitle').innerText = "Створити / Редагувати заявку";
+            loadRequests();
+        } else {
+            const err = await res.json();
+            alert("Помилка: " + (err.error || "Дані некоректні"));
+        }
+    };
+
+    async function deleteRequest(id) {
+        if (confirm('Видалити?')) {
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            loadRequests();
+        }
+    }
+
+    loadRequests();
+</script>
+</body>
+</html>
