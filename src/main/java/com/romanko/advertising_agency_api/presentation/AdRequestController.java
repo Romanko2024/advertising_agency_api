@@ -38,4 +38,9 @@ public class AdRequestController {
         service.deleteRequest(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AdRequestDTO> getOne(@PathVariable Long id) {
+        return ResponseEntity.ok(service.getById(id));
+    }
 }

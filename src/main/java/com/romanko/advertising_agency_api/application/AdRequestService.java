@@ -44,6 +44,12 @@ public class AdRequestService {
         repository.deleteById(id);
     }
 
+    public AdRequestDTO getById(Long id) {
+        return repository.findById(id)
+            .map(this::convertToDTO)
+            .orElseThrow(() -> new RuntimeException("Заявку з ID " + id + " не знайдено"));
+    }
+    
     private AdRequestDTO convertToDTO(AdRequest entity) {
         return new AdRequestDTO(entity.getId(), entity.getClientName(), entity.getBudget(), entity.getDescription());
     }
